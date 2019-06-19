@@ -32,7 +32,7 @@
     <scm>
         <connection>scm:git@gitlab.com:praegus/toolchain-fixtures/json-javadoc-doclet.git</connection>
         <url>https://gitlab.com/praegus/toolchain-fixtures/json-javadoc-doclet.git</url>
-        <developerConnection>scm:git@gitlab.com:praegus/toolchain-fixtures/json-javadoc-doclet.git
+        <developerConnection>scm:git:git@gitlab.com:praegus/toolchain-fixtures/json-javadoc-doclet.git
         </developerConnection>
         <tag>HEAD</tag>
     </scm>
