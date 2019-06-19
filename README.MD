@@ -5,7 +5,7 @@ A doclet class to collect Javadoc info from fixture classes to be distributed in
 
 Use Praegus toolchain-fitnesse-plugin (https://repo.maven.apache.org/maven2/nl/praegus/toolchain-fitnesse-plugin/) to see the documentation in your test's context pane when editing.
 
-If you define a line inyour javadoc thar starts with 'Usage: ' the wiki usage is expected. So say we have a method:
+If you define a line in your javadoc comment that starts with 'Usage: ' the wiki usage is expected. So say we have a method:
 
 ```
 public String getSomeDataFromButIgnore(String location, String somethingElse) {}
