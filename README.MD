@@ -18,7 +18,7 @@ One could write:
  * Usage: | get some data from | [location] | but ignore | [somethingElse] |
  * @Param location ..
  * @Param somethingElse ..
- * @Return the requeste data
+ * @Return the requested data
  */
 ```
 To be sure that the context helper and autocomplete will use that string instead of:
