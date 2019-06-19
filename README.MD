@@ -5,6 +5,29 @@ A doclet class to collect Javadoc info from fixture classes to be distributed in
 
 Use Praegus toolchain-fitnesse-plugin (https://repo.maven.apache.org/maven2/nl/praegus/toolchain-fitnesse-plugin/) to see the documentation in your test's context pane when editing.
 
+If you define a line inyour javadoc thar starts with 'Usage: ' the wiki usage is expected. So say we have a method:
+
+```
+public String getSomeDataFromButIgnore(String location, String somethingElse) {}
+```
+
+One could write:
+```
+/**
+ * A method that gets data
+ * Usage: | get some data from | [location] | but ignore | [somethingElse] |
+ * @Param location ..
+ * @Param somethingElse ..
+ * @Return the requeste data
+ */
+```
+To be sure that the context helper and autocomplete will use that string instead of:
+
+```
+| get some data from but | [location] | ignore | [somethingElse] |
+```
+Which the default wikitext generator in autocomplete responder would produce.
+
 Usage:
 Add the doclet to your build using the maven-javadoc-plugin.
 Note that in order to document any methods that come from superclasses that are not in your package, you should set `includeDependencySources` to true and exclude any packages (you can use wildcards) that you don't need json files for.
