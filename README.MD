@@ -56,7 +56,7 @@ Note that in order to document any methods that come from superclasses that are 
 
         <includeDependencySources>true</includeDependencySources>
         <dependencySourceIncludes>
-            <dependencySourceInclude>group:artifactToInclude</dependencySourceInclude>--&gt;
+            <dependencySourceInclude>group:artifactToInclude</dependencySourceInclude>
         </dependencySourceIncludes>
 
         <reportOutputDirectory>${project.basedir}/src/main/resources/META-INF/</reportOutputDirectory>
