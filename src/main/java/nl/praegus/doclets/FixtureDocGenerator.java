@@ -34,14 +34,25 @@ public class FixtureDocGenerator {
      * PATTERN_USAGE contains the regex pattern used to filter usage strings (wiki text)
      */
     private static Pattern PATTERN_USAGE = Pattern.compile(".*[U|u]sage:\\s(\\|[\\w\\s|()\\[\\]\\\\]+\\|).*", Pattern.DOTALL);
+    private static Map<String, Object> staticFields = new HashMap<>();
 
     public static boolean start(RootDoc root) throws Exception {
         ClassDoc[] classes = root.classes();
-
+        populateStaticFieldLibrary(classes);
         for (ClassDoc c : classes) {
             parseClass(c);
         }
         return true;
+    }
+
+    private static void populateStaticFieldLibrary(ClassDoc[] classes) {
+        for (ClassDoc c : classes) {
+            for (FieldDoc f : c.fields()) {
+                if (f.isPublic() && f.isStatic()) {
+                    staticFields.put(c.qualifiedName() + "#" + f.name(), f.constantValue());
+                }
+            }
+        }
     }
 
     private static void parseClass(ClassDoc c) throws Exception {
@@ -59,7 +70,7 @@ public class FixtureDocGenerator {
 
         ArrayList<Object> constructors = new ArrayList<>();
         for (ConstructorDoc constructor : c.constructors()) {
-            if(constructor.isPublic()) {
+            if (constructor.isPublic()) {
                 constructors.add(parseConstructor(constructor));
             }
         }
@@ -82,15 +93,17 @@ public class FixtureDocGenerator {
                 methods.add(parseMethod(method));
             }
         }
+
         if (null != c.superclassType()) {
             collectAllPublicMethods(c.superclass(), methods);
         }
     }
 
     private static Object parseMethod(MethodDoc method) {
+
         HashMap<String, Object> properties = new HashMap<>();
-        String docString = method.commentText();
-        if(method.tags("@deprecated").length > 0) {
+        String docString = parseDescription(method);
+        if (method.tags("@deprecated").length > 0) {
             String lineBreak = docString.length() > 0 ? "\r\n" : "";
             docString += lineBreak + "<b>Deprecated:</b> " + method.tags("@deprecated")[0].text();
         }
@@ -117,7 +130,7 @@ public class FixtureDocGenerator {
         properties.put("annotations", annotations);
 
         properties.put("returnType", method.returnType().typeName());
-        if(method.tags("@return").length > 0) {
+        if (method.tags("@return").length > 0) {
             properties.put("returnDescription", method.tags("@return")[0].text());
         }
 
@@ -126,9 +139,9 @@ public class FixtureDocGenerator {
 
         properties.put("usage", usage);
         String contextHelp = usage.substring(2)
-                            .replaceAll("\\| \\[(\\w+)] \\|", "&lt;$1&gt;")
-                            .replace("|", "")
-                            .trim();
+                .replaceAll("\\| \\[(\\w+)] \\|", "&lt;$1&gt;")
+                .replace("|", "")
+                .trim();
         properties.put("contexthelp", contextHelp);
 
         return properties;
@@ -138,7 +151,7 @@ public class FixtureDocGenerator {
         HashMap<String, Object> properties = new HashMap<>();
         properties.put("name", constructor.name());
         properties.put("readableName", splitCamelCase(constructor.name()));
-        properties.put("docString", constructor.commentText());
+        properties.put("docString", parseDescription(constructor));
 
         ArrayList<Object> exceptions = new ArrayList<>();
         for (Type exception : constructor.thrownExceptionTypes()) {
@@ -163,7 +176,7 @@ public class FixtureDocGenerator {
         if (matcher.matches()) {
             properties.put("usage", matcher.group(1));
         } else {
-            properties.put("usage", generateContructorUsageString(constructor));
+            properties.put("usage", generateConstructorUsageString(constructor));
         }
 
         return properties;
@@ -173,13 +186,38 @@ public class FixtureDocGenerator {
         HashMap<String, Object> properties = new HashMap<>();
         properties.put("name", parameter.name());
         properties.put("type", parameter.type().typeName());
-        for(ParamTag doc : paramDocs) {
-            if(doc.parameterName().equals(parameter.name())) {
-                properties.put("description", doc.parameterComment());
+        for (ParamTag doc : paramDocs) {
+            if (doc.parameterName().equals(parameter.name())) {
+                properties.put("description", replaceValueRef(doc.parameterComment()));
                 break;
             }
         }
         return properties;
+    }
+
+    private static String replaceValueRef(String description) {
+        Pattern paramPattern = Pattern.compile(".*\\{(@value.+)}.*");
+        Matcher m = paramPattern.matcher(description);
+        if (m.matches()) {
+            String replace = m.group(1);
+            if (staticFields.containsKey(replace.substring(7))) {
+                return description.replace("{" + replace + "}", staticFields.get(replace.substring(7)).toString());
+            }
+        }
+        return description;
+    }
+
+    private static String parseDescription(Doc d) {
+        StringBuilder description = new StringBuilder();
+        Tag[] tags = d.inlineTags();
+        for (Tag tag : tags) {
+            if (tag.name().equals("@value") && staticFields.containsKey(tag.text())) {
+                description.append(staticFields.get(tag.text()));
+            } else {
+                description.append(tag.text());
+            }
+        }
+        return description.toString();
     }
 
     private static void writeJson(File f, Object o) throws IOException {
@@ -212,20 +250,20 @@ public class FixtureDocGenerator {
         ).toLowerCase();
     }
 
-    private static String generateContructorUsageString(ConstructorDoc constructor) {
+    private static String generateConstructorUsageString(ConstructorDoc constructor) {
         StringBuilder wikiText = new StringBuilder("| ");
         wikiText.append(splitCamelCase(constructor.name()))
                 .append(" |");
         for (Parameter parameter : constructor.parameters()) {
             String paramDisplay = String.format(" [%s]", parameter.name());
-                        wikiText.append(paramDisplay)
+            wikiText.append(paramDisplay)
                     .append(" |");
         }
         return wikiText.toString();
     }
 
     private static String generateMethodUsageString(MethodDoc method) {
-        String readableMethodName =splitCamelCase(method.name());
+        String readableMethodName = splitCamelCase(method.name());
         String[] methodNameParts = readableMethodName.split(" ");
 
         int numberOfParts = methodNameParts.length;
